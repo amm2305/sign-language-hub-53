@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Hand, BookOpen, Camera, BarChart3, Menu, X } from "lucide-react";
+import { Hand, BookOpen, Camera, BarChart3, Menu, X, LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "Home", icon: Hand },
@@ -14,6 +16,7 @@ const navItems = [
 const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
@@ -51,6 +54,20 @@ const Navbar = () => {
               </Link>
             );
           })}
+
+          {user ? (
+            <Button variant="ghost" size="sm" onClick={signOut} className="ml-2 text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 mr-1.5" />
+              Sign Out
+            </Button>
+          ) : (
+            <Button asChild size="sm" className="ml-2 bg-gradient-hero text-primary-foreground hover:opacity-90">
+              <Link to="/auth">
+                <LogIn className="w-4 h-4 mr-1.5" />
+                Sign In
+              </Link>
+            </Button>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -88,6 +105,25 @@ const Navbar = () => {
                   </Link>
                 );
               })}
+
+              {user ? (
+                <button
+                  onClick={() => { signOut(); setMobileOpen(false); }}
+                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-gradient-hero text-primary-foreground"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
