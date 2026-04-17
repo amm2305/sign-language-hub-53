@@ -10,49 +10,125 @@ const TranslatorPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-    if (videoRef.current) videoRef.current.srcObject = null;
+
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+    }
+
     setCameraOn(false);
+    setStarting(false);
+    setVideoReady(false);
+    setError(null);
+  };
+
+  const attachStreamToVideo = async (stream: MediaStream) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.srcObject = stream;
+
+    const playVideo = async () => {
+      try {
+        await video.play();
+        setVideoReady(true);
+      } catch {
+        setError("Camera started, but the live preview could not play. Please tap Start Camera again.");
+      }
+    };
+
+    if (video.readyState >= 1) {
+      await playVideo();
+      return;
+    }
+
+    video.onloadedmetadata = () => {
+      video.onloadedmetadata = null;
+      void playVideo();
+    };
   };
 
   const startCamera = async () => {
+    if (starting) return;
+
     setError(null);
     setStarting(true);
+    setVideoReady(false);
+
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Camera API not supported in this browser");
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
+
+      let stream: MediaStream;
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "user" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch (primaryError: any) {
+        if (["NotAllowedError", "NotFoundError", "NotReadableError", "SecurityError"].includes(primaryError?.name)) {
+          throw primaryError;
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
+
+      streamRef.current = stream;
       setCameraOn(true);
+      await attachStreamToVideo(stream);
     } catch (err: any) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
+      setCameraOn(false);
+      setVideoReady(false);
+
       const msg =
         err?.name === "NotAllowedError"
           ? "Camera permission denied. Please allow access in your browser."
           : err?.name === "NotFoundError"
-          ? "No camera detected on this device."
-          : err?.message || "Could not start camera.";
+            ? "No camera detected on this device."
+            : err?.name === "NotReadableError"
+              ? "Your camera is already in use by another app."
+              : err?.message || "Could not start camera.";
+
       setError(msg);
       toast({ title: "Camera error", description: msg, variant: "destructive" });
     } finally {
       setStarting(false);
     }
   };
+
+  useEffect(() => {
+    if (!cameraOn || !streamRef.current || !videoRef.current) return;
+
+    if (videoRef.current.srcObject !== streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+
+    if (videoRef.current.paused) {
+      void videoRef.current.play().then(() => setVideoReady(true)).catch(() => null);
+    }
+  }, [cameraOn]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -62,7 +138,7 @@ const TranslatorPage = () => {
     const signs = ["Hello", "Thank you", "Yes", "No", "Please", "Sorry", "Help", "Love"];
     const pick = signs[Math.floor(Math.random() * signs.length)];
     setDetectedSign(pick);
-    setHistory((h) => [pick, ...h.filter((s) => s !== pick)].slice(0, 6));
+    setHistory((current) => [pick, ...current.filter((sign) => sign !== pick)].slice(0, 6));
   };
 
   return (
@@ -75,7 +151,6 @@ const TranslatorPage = () => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Camera feed */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -87,10 +162,12 @@ const TranslatorPage = () => {
                 playsInline
                 muted
                 autoPlay
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity ${
-                  cameraOn ? "opacity-100" : "opacity-0 pointer-events-none"
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+                  cameraOn && videoReady ? "opacity-100" : "opacity-0 pointer-events-none"
                 }`}
+                style={{ transform: "scaleX(-1)" }}
               />
+
               {!cameraOn && !starting && (
                 <div className="text-center p-8 relative z-10">
                   <div className="w-16 h-16 mx-auto rounded-2xl bg-muted flex items-center justify-center mb-4">
@@ -100,25 +177,31 @@ const TranslatorPage = () => {
                   <p className="text-sm text-muted-foreground">Enable camera to start translating</p>
                 </div>
               )}
-              {starting && (
-                <div className="text-center relative z-10">
-                  <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary border-t-transparent animate-spin mb-3" />
-                  <p className="text-sm text-muted-foreground">Starting camera…</p>
+
+              {(starting || (cameraOn && !videoReady && !error)) && (
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary border-t-transparent animate-spin mb-3" />
+                    <p className="text-sm text-foreground">Preparing live preview…</p>
+                  </div>
                 </div>
               )}
+
               {cameraOn && (
-                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-1 rounded-full bg-background/80 backdrop-blur border border-border">
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-background/80 backdrop-blur border border-border">
                   <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
                   <span className="text-xs font-medium text-foreground">LIVE</span>
                 </div>
               )}
             </div>
+
             {error && (
               <div className="px-4 pt-3 flex items-start gap-2 text-sm text-destructive">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
+
             <div className="p-4 flex gap-3">
               <Button
                 onClick={cameraOn ? stopCamera : startCamera}
@@ -136,7 +219,6 @@ const TranslatorPage = () => {
             </div>
           </motion.div>
 
-          {/* Translation output */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Hand, BookOpen, Camera, BarChart3, Menu, X, LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +28,6 @@ const Navbar = () => {
           SignLingo
         </Link>
 
-        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const active = location.pathname === item.path;
@@ -61,16 +60,16 @@ const Navbar = () => {
               Sign Out
             </Button>
           ) : (
-            <Button asChild size="sm" className="ml-2 bg-gradient-hero text-primary-foreground hover:opacity-90">
-              <Link to="/auth">
-                <LogIn className="w-4 h-4 mr-1.5" />
-                Sign In
-              </Link>
-            </Button>
+            <Link
+              to="/auth"
+              className="ml-2 inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-gradient-hero px-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </Link>
           )}
         </div>
 
-        {/* Mobile toggle */}
         <button
           className="md:hidden p-2 rounded-lg text-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -79,55 +78,54 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile nav */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-hidden border-b border-border bg-card"
-          >
-            <div className="p-4 flex flex-col gap-1">
-              {navItems.map((item) => {
-                const active = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      active ? "bg-secondary text-primary" : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-
-              {user ? (
-                <button
-                  onClick={() => { signOut(); setMobileOpen(false); }}
-                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
-              ) : (
+      {mobileOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          className="md:hidden overflow-hidden border-b border-border bg-card"
+        >
+          <div className="p-4 flex flex-col gap-1">
+            {navItems.map((item) => {
+              const active = location.pathname === item.path;
+              return (
                 <Link
-                  to="/auth"
+                  key={item.path}
+                  to={item.path}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-gradient-hero text-primary-foreground"
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    active ? "bg-secondary text-primary" : "text-muted-foreground hover:bg-muted"
+                  }`}
                 >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
                 </Link>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              );
+            })}
+
+            {user ? (
+              <button
+                onClick={() => {
+                  signOut();
+                  setMobileOpen(false);
+                }}
+                className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-gradient-hero text-primary-foreground"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Link>
+            )}
+          </div>
+        </motion.div>
+      )}
     </nav>
   );
 };
