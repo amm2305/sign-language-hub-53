@@ -1,11 +1,30 @@
 import { motion } from "framer-motion";
 import { Hand, BookOpen, Camera, BarChart3, Sparkles, Users, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import ModuleCard from "@/components/ModuleCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const { user } = useAuth();
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setDisplayName(null); return; }
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const name = data?.display_name || data?.username || user.user_metadata?.full_name || user.email?.split("@")[0] || null;
+        setDisplayName(name);
+      });
+  }, [user]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -22,7 +41,7 @@ const Index = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm font-medium mb-6">
                 <Sparkles className="w-4 h-4" />
-                AI-Powered Sign Language Learning
+                {displayName ? `Welcome back, ${displayName}!` : "AI-Powered Sign Language Learning"}
               </div>
               <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Learn Sign Language,{" "}
