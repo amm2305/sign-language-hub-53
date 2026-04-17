@@ -1,16 +1,68 @@
 import { motion } from "framer-motion";
-import { Camera, CameraOff, RefreshCw, Hand } from "lucide-react";
-import { useState } from "react";
+import { Camera, CameraOff, RefreshCw, Hand, AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const TranslatorPage = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraOn(false);
+  };
+
+  const startCamera = async () => {
+    setError(null);
+    setStarting(true);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera API not supported in this browser");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+      setCameraOn(true);
+    } catch (err: any) {
+      const msg =
+        err?.name === "NotAllowedError"
+          ? "Camera permission denied. Please allow access in your browser."
+          : err?.name === "NotFoundError"
+          ? "No camera detected on this device."
+          : err?.message || "Could not start camera.";
+      setError(msg);
+      toast({ title: "Camera error", description: msg, variant: "destructive" });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
 
   const simulateDetection = () => {
     const signs = ["Hello", "Thank you", "Yes", "No", "Please", "Sorry", "Help", "Love"];
-    setDetectedSign(signs[Math.floor(Math.random() * signs.length)]);
+    const pick = signs[Math.floor(Math.random() * signs.length)];
+    setDetectedSign(pick);
+    setHistory((h) => [pick, ...h.filter((s) => s !== pick)].slice(0, 6));
   };
 
   return (
@@ -30,16 +82,17 @@ const TranslatorPage = () => {
             className="bg-card rounded-2xl border border-border overflow-hidden shadow-card"
           >
             <div className="aspect-video bg-foreground/5 flex items-center justify-center relative">
-              {cameraOn ? (
-                <div className="absolute inset-0 bg-foreground/90 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-20 h-20 mx-auto rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
-                    <p className="text-primary-foreground font-medium">Camera Active</p>
-                    <p className="text-primary-foreground/60 text-sm">Show a sign to translate</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-8">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                autoPlay
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity ${
+                  cameraOn ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              />
+              {!cameraOn && !starting && (
+                <div className="text-center p-8 relative z-10">
                   <div className="w-16 h-16 mx-auto rounded-2xl bg-muted flex items-center justify-center mb-4">
                     <Camera className="w-8 h-8 text-muted-foreground" />
                   </div>
@@ -47,21 +100,36 @@ const TranslatorPage = () => {
                   <p className="text-sm text-muted-foreground">Enable camera to start translating</p>
                 </div>
               )}
+              {starting && (
+                <div className="text-center relative z-10">
+                  <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary border-t-transparent animate-spin mb-3" />
+                  <p className="text-sm text-muted-foreground">Starting camera…</p>
+                </div>
+              )}
+              {cameraOn && (
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-1 rounded-full bg-background/80 backdrop-blur border border-border">
+                  <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                  <span className="text-xs font-medium text-foreground">LIVE</span>
+                </div>
+              )}
             </div>
+            {error && (
+              <div className="px-4 pt-3 flex items-start gap-2 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <div className="p-4 flex gap-3">
               <Button
-                onClick={() => setCameraOn(!cameraOn)}
+                onClick={cameraOn ? stopCamera : startCamera}
                 variant={cameraOn ? "destructive" : "default"}
                 className="flex-1"
+                disabled={starting}
               >
                 {cameraOn ? <CameraOff className="w-4 h-4 mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
-                {cameraOn ? "Stop Camera" : "Start Camera"}
+                {cameraOn ? "Stop Camera" : starting ? "Starting…" : "Start Camera"}
               </Button>
-              <Button
-                onClick={simulateDetection}
-                variant="outline"
-                className="flex-1"
-              >
+              <Button onClick={simulateDetection} variant="outline" className="flex-1">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Simulate
               </Button>
@@ -98,11 +166,10 @@ const TranslatorPage = () => {
               )}
             </div>
 
-            {/* History */}
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">Recent Detections</p>
               <div className="flex gap-2 flex-wrap">
-                {["Hello", "Thank you", "Yes"].map((sign) => (
+                {(history.length ? history : ["Hello", "Thank you", "Yes"]).map((sign) => (
                   <span key={sign} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium">
                     {sign}
                   </span>
