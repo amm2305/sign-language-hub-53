@@ -41,7 +41,7 @@ const Index = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm font-medium mb-6">
                 <Sparkles className="w-4 h-4" />
-                AI-Powered Sign Language Learning
+                {displayName ? `Welcome back, ${displayName}!` : "AI-Powered Sign Language Learning"}
               </div>
               <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Learn Sign Language,{" "}
