@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -68,35 +68,32 @@ const AlphabetPage = () => {
           ))}
         </div>
 
-        <AnimatePresence>
-          {selected && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: "auto" }}
-              exit={{ opacity: 0, y: 20, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-card rounded-2xl border border-border p-8 shadow-card">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="w-40 h-40 rounded-2xl bg-secondary flex items-center justify-center">
-                    <span className="font-display text-7xl font-bold text-primary">{selected}</span>
-                  </div>
-                  <div className="flex-1 text-center md:text-left">
-                    <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-                      Letter {selected}
-                    </h2>
-                    <p className="text-lg text-muted-foreground mb-4">
-                      {handDescriptions[selected]}
-                    </p>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success/10 text-success text-sm font-medium">
-                      💡 Practice this sign in the Translator module
-                    </div>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-card rounded-2xl border border-border p-8 shadow-card">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="w-40 h-40 rounded-2xl bg-secondary flex items-center justify-center">
+                  <span className="font-display text-7xl font-bold text-primary">{selected}</span>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                    Letter {selected}
+                  </h2>
+                  <p className="text-lg text-muted-foreground mb-4">
+                    {handDescriptions[selected]}
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success/10 text-success text-sm font-medium">
+                    💡 Practice this sign in the Translator module
                   </div>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
