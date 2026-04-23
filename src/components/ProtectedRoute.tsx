@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const token = localStorage.getItem("token");
 
   if (loading) {
     return (
@@ -12,7 +13,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user) {
+  // ✅ FIX: allow either context OR token
+  if (!user && !token) {
     return <Navigate to="/auth" replace />;
   }
 
