@@ -47,6 +47,8 @@
     --gradient-accent: linear-gradient(135deg, hsl(265, 70%, 60%), hsl(285, 70%, 60%));
     --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%), hsl(230, 30%, 98%));
     --gradient-bg: radial-gradient(ellipse at top left, hsl(230, 70%, 95%) 0%, transparent 50%), radial-gradient(ellipse at bottom right, hsl(265, 60%, 95%) 0%, transparent 50%), hsl(225, 30%, 98%);
+    --pattern-grid: linear-gradient(hsl(230 40% 88% / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(230 40% 88% / 0.4) 1px, transparent 1px);
+    --pattern-dots: radial-gradient(hsl(250 50% 70% / 0.18) 1.2px, transparent 1.2px);
 
     --shadow-card: 0 4px 20px -4px hsl(230 50% 20% / 0.08);
     --shadow-card-hover: 0 8px 30px -6px hsl(230 50% 20% / 0.15);
@@ -106,6 +108,38 @@
     background: var(--gradient-bg);
     background-attachment: fixed;
     min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: var(--pattern-dots);
+    background-size: 28px 28px;
+    opacity: 0.55;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+  body::after {
+    content: "SignLingo";
+    position: fixed;
+    bottom: -2rem;
+    right: -1rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(8rem, 18vw, 16rem);
+    letter-spacing: -0.05em;
+    color: hsl(250 65% 55% / 0.05);
+    pointer-events: none;
+    z-index: 0;
+    line-height: 1;
+    user-select: none;
+  }
+  #root {
+    position: relative;
+    z-index: 1;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -136,5 +170,13 @@
   }
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
+  }
+  .bg-pattern-grid {
+    background-image: var(--pattern-grid);
+    background-size: 32px 32px;
+  }
+  .bg-pattern-dots {
+    background-image: var(--pattern-dots);
+    background-size: 24px 24px;
   }
 }
