@@ -171,4 +171,12 @@
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
   }
+  .bg-pattern-grid {
+    background-image: var(--pattern-grid);
+    background-size: 32px 32px;
+  }
+  .bg-pattern-dots {
+    background-image: var(--pattern-dots);
+    background-size: 24px 24px;
+  }
 }
