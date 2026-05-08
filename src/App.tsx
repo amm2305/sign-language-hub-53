@@ -22,17 +22,19 @@ const App = () => {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ Run only once at startup
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    if (token) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
-
-    setAuthChecked(true);
+    const sync = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+      setAuthChecked(true);
+    };
+    sync();
+    window.addEventListener("auth-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("auth-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
 
   // Optional: prevent flicker before auth check completes
@@ -56,26 +58,10 @@ const App = () => {
               {/* PUBLIC FEATURE (no login required) */}
               <Route path="/translator" element={<TranslatorPage />} />
 
-              {/* PROTECTED ROUTES (only if logged in) */}
-              {isLoggedIn ? (
-                <>
-                  <Route
-                    path="/alphabet"
-                    element={<ProtectedRoute><AlphabetPage /></ProtectedRoute>}
-                  />
-                  <Route
-                    path="/lessons"
-                    element={<ProtectedRoute><LessonsPage /></ProtectedRoute>}
-                  />
-                  <Route
-                    path="/progress"
-                    element={<ProtectedRoute><ProgressPage /></ProtectedRoute>}
-                  />
-                </>
-              ) : (
-                // If not logged in, block access to protected pages
-                <Route path="*" element={<AuthPage />} />
-              )}
+              {/* PROTECTED ROUTES */}
+              <Route path="/alphabet" element={<ProtectedRoute><AlphabetPage /></ProtectedRoute>} />
+              <Route path="/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />
+              <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
 
               {/* fallback */}
               <Route path="*" element={<NotFound />} />

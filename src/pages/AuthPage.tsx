@@ -47,7 +47,7 @@ const AuthPage = () => {
         localStorage.setItem("userName", data.name || data.user?.name || fullName || email.split("@")[0]);
         window.dispatchEvent(new Event("auth-changed"));
         toast({ title: "Welcome back!", description: "Login successful." });
-        navigate("/alphabet");
+        navigate("/", { replace: true });
       } else {
         toast({ title: "Account created!", description: "You can now sign in." });
         setIsLogin(true);
